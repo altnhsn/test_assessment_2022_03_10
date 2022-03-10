@@ -13,10 +13,16 @@ import org.springframework.stereotype.Service
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
+trait UserService {
+  def storeUsers: Future[Boolean]
+
+  def retrieveUsers: Future[List[User]]
+}
+
 @Service
 @Autowired
-class UserService(httpClient: AsyncHttpClient, repository: UserRepository, conf: UserServiceConf)
-                 (implicit ec: ExecutionContext, system: ActorSystem) extends Logging {
+class DefaultUserService(httpClient: AsyncHttpClient, repository: UserRepository, conf: UserServiceConf)
+                        (implicit ec: ExecutionContext, system: ActorSystem) extends UserService with Logging {
 
   def storeUsers: Future[Boolean] = {
 

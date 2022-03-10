@@ -1,9 +1,7 @@
 package co.copper.test.storage
 
 import co.copper.test.model._
-import co.copper.test.storage.UserRepository.UserRowMapper
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.sbuslab.utils.db.JacksonBeanRowMapper
+import co.copper.test.storage.DefaultUserRepository.UserRowMapper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.jdbc.core.namedparam.{MapSqlParameterSource, NamedParameterJdbcTemplate}
@@ -13,9 +11,15 @@ import java.sql.ResultSet
 import java.util.UUID
 import scala.collection.JavaConverters._
 
+trait UserRepository {
+  def retrieveUsers(): List[User]
+
+  def saveUsers(users: Users): Map[User, Boolean]
+}
+
 @Repository
 @Autowired
-class UserRepository(jdbcTemplate: NamedParameterJdbcTemplate) {
+class DefaultUserRepository(jdbcTemplate: NamedParameterJdbcTemplate) extends UserRepository {
 
   private val rowMapper = new UserRowMapper
 
@@ -25,11 +29,11 @@ class UserRepository(jdbcTemplate: NamedParameterJdbcTemplate) {
       |VALUES (:id, :first, :last, :email, :password);
       |""".stripMargin
 
-  def retrieveUsers(): List[User] = {
-    jdbcTemplate.query("""SELECT * FROM public.random_user""", rowMapper).asScala.toList
+  override def retrieveUsers(): List[User] = {
+    jdbcTemplate.query("""SELECT * FROM random_user""", rowMapper).asScala.toList
   }
 
-  def saveUsers(users: Users): Map[User, Boolean] =
+  override def saveUsers(users: Users): Map[User, Boolean] =
     users.results.map(user => user -> saveUser(user)).toMap
 
   def saveUser(user: User): Boolean = {
@@ -44,7 +48,7 @@ class UserRepository(jdbcTemplate: NamedParameterJdbcTemplate) {
 
 }
 
-object UserRepository {
+object DefaultUserRepository {
   class UserRowMapper extends RowMapper[User] {
     override def mapRow(rs: ResultSet, rowNum: Int): User = {
       User(name = Name(first = rs.getString("first"), last = rs.getString("last")),
